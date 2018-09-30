@@ -1,30 +1,5 @@
 <?php 
-	require "rb/rb.php";
-	R::setup('mysql:host=localhost;dbname=test_loginpage',
-        'root', '3782');
-
-	if( !R::testConnection() )
-	{
-		echo '<b><div style = "color: red;">Database error</div></b>';;
-		exit();
-	}
-
-	function get_ip()
-	{
-		if (!empty($_SERVER['HTTP_CLIENT_IP']))
-		{
-			$ip=$_SERVER['HTTP_CLIENT_IP'];
-		}
-		elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
-		{
-			$ip=$_SERVER['HTTP_X_FORWARDED_FOR'];
-		}
-		else
-	    {
-			$ip=$_SERVER['REMOTE_ADDR'];
-		}
-		return $ip;
-	}
+	include "connection.php";
 
 	$data = $_POST;
 
@@ -51,15 +26,24 @@
 			$errors[] = "Passwords doesn't match";
 		}
 
+		if(R::count('users', "login = ?", array($data['login'])) > 0
+)		{
+			$errors[] = "Login has already taken";
+		}
+
+		if(R::count('users', "email = ?", array($data['email'])) > 0)
+		{
+			$errors[] = "Email has already taken";
+		}
+
 		if( empty($errors))
 		{
 			$user = R::dispense('users');
 			$user->login = $data['login'];
 			$user->email = $data['email'];
-			$user->password = $data['password'];
+			$user->password = password_hash($data['password'], PASSWORD_DEFAULT);
 			R::store($user);
 			echo '<div style = "color: green;">Done!</div><hr>';
-			echo get_ip();
 		}else
 		{
 			echo '<div style = "color: red;">'.array_shift($errors).'</div><hr>';
@@ -93,5 +77,6 @@
 	<p>
 		<button type = "submit" name = "do_signup">Submit</button>
 	</p>
+
 
 </form>
